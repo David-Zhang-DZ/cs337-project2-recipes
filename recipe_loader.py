@@ -1,4 +1,6 @@
 import spacy
+from sample_recipes import recipe1, recipe2, recipe3, recipe4, recipe5
+
 nlp = spacy.load("en_core_web_sm")
 
 def load_ingredients():
@@ -10,8 +12,6 @@ def load_ingredients():
                     "1/2 teaspoon kosher salt",
                     "1/4 teaspoon ground black pepper",
                     "4 large carrots, sliced into 1/4-inch thick rounds"
-                    
-                    
                     ]
 
     measure_words = ["teaspoon",  "cup", "tablespoon", "pound"]
@@ -31,7 +31,7 @@ def load_recipes():
     steps = text.split(".")
     for step in steps:
         doc = nlp(step)
-         
+
         action = None
         ingredients = []
 
@@ -44,4 +44,6 @@ def load_recipes():
         print(f"Action: {action}, ingredients:{', '.join(ingredients)}")
 
 if __name__ == "__main__":
+    load_ingredients()
+    print()
     load_recipes()
