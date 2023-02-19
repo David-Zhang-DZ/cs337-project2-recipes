@@ -15,9 +15,7 @@ def load_ingredients():
                     "1/2 teaspoon garlic powder",
                     "1/2 teaspoon kosher salt",
                     "1/4 teaspoon ground black pepper",
-                    "4 large carrots, sliced into 1/4-inch thick rounds"
-                    
-                    
+                    "4 large carrots, sliced into 1/4-inch thick rounds"    
                     ]
 
     measure_words = ["teaspoon",  "cup", "tablespoon", "pound"]
@@ -29,9 +27,9 @@ def load_ingredients():
             if token.dep_ == "ROOT":
                 quantities[token.text] = curr_quantity
                 modifiers = [child.text for child in token.children if child.text not in measure_words]
-                print(f"Ingredient: {' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}")
+                #print(f"Ingredient: {' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}")
             elif token.dep_ == "nummod":
-                print(f"Quantity: {token.text} {token.head.text}")
+                #print(f"Quantity: {token.text} {token.head.text}")
                 curr_quantity = token.text + " " + token.head.text
                  
     return quantities

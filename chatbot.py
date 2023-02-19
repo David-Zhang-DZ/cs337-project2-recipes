@@ -1,10 +1,13 @@
+import spacy
 import re
-from recipe_loader import load_ingredients
+from recipe_loader import load_ingredients, init_recipe_data
+
+nlp = spacy.load("en_core_web_sm")
 
 def main():
     steps = ["Wash the rice", "Put the rice in the rice cooker", "Turn on the rice cooker"]
     idx = 0
-    outputStep(steps, idx)
+    #outputStep(steps, idx)
     quantities = load_ingredients()
     print(quantities.keys())
     while True:
@@ -12,6 +15,17 @@ def main():
         if x == "q" or x == "quit":
             break
         
+        doc = nlp(x)
+        object = "NO OBJECT!!!!"
+        for token in doc:
+            if token.dep_ == "dobj":
+                modifiers = f"{' '.join([child.text for child in token.children if len([subchild.text for subchild in child.children]) == 0])}"
+                dobj = token.text
+                if len(modifiers) > 0:
+                    object = f"{modifiers} {dobj}"
+                else:
+                    object = dobj
+
         if "next" in x.lower():
             idx += 1
             outputStep(steps, idx)
@@ -21,10 +35,9 @@ def main():
         elif "repeat" in x.lower():
             outputStep(steps, idx)
         elif "how much" in x.lower():
-            match = x.split()
-            match = match.pop()
-            if match in quantities:
-                print(quantities[match])
+            print(f"Object: {object}")
+            if object in quantities:
+                print(quantities[object])
             
             
 
