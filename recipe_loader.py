@@ -3,13 +3,15 @@ import re
 import sys
 from sample_recipes import recipe1, recipe2, recipe3, recipe4, recipe5
 
-nlp = spacy.load("en_core_web_sm")
-ingredients, steps, measure_words = [], [], [] # Will be filled in w/ command-line args
+NLP = spacy.load("en_core_web_sm")
+DEFAULT_MEASURE_WORDS = set(["teaspoon", "tablespoon", "cup", "pound"])
+
+ingredients, steps, measure_words = [], [], set([]) # Will be filled in w/ command-line args
 
 def load_ingredients():
     quantities = {}
     for ingredient in ingredients:
-        doc = nlp(ingredient)
+        doc = NLP(ingredient)
         curr_quantity = None
         for token in doc:
             if token.dep_ == "ROOT":
@@ -18,14 +20,13 @@ def load_ingredients():
                 print(f"Ingredient: {' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}")
             elif token.dep_ == "nummod":
                 print(f"Quantity: {token.text} {token.head.text}")
-                print("MISC", token.head.text)
                 curr_quantity = token.text + " " + token.head.text
 
     return quantities
 
 def load_recipes():
     for step in steps:
-        doc = nlp(step)
+        doc = NLP(step)
 
         action = None
         ingredients = []
@@ -40,19 +41,30 @@ def load_recipes():
 
 def determine_measure_words():
   global measure_words
-  measure_words_dict = {}
+
+  for k in DEFAULT_MEASURE_WORDS:
+    measure_words.add(k)
 
   for ingredient in ingredients:
-        doc = nlp(ingredient)
+        doc = NLP(ingredient)
 
         for token in doc:
             if token.dep_ == "nummod" and token.head.dep_ != "ROOT":
-                if token.head.text not in measure_words_dict:
-                  measure_words_dict[token.head.text] = 1
-                  measure_words.append(token.head.text)
+                measure_word = token.head.text
 
-# def parse_ingredients(raw_ingredients):
+                if measure_word not in measure_words:
+                  measure_words.add(measure_word)
 
+def parse_ingredients(raw_ingredients):
+  ingredients = []
+
+  for ingredient in raw_ingredients:
+    ingredient = re.sub("\(.*?\)", "", ingredient)
+    ingredient = re.sub(" +", " ", ingredient)
+
+    ingredients.append(ingredient)
+
+  return ingredients
 
 def parse_steps(raw_steps):
     steps = []
@@ -86,7 +98,7 @@ def init_recipe_data(recipe_number):
   if recipe_number == 5:
     ingredients, steps = recipe5.INGREDIENTS, recipe5.STEPS
 
-  # ingredients = parse_ingredients(ingredients)
+  ingredients = parse_ingredients(ingredients)
   steps = parse_steps(steps)
 
 if __name__ == "__main__":
@@ -103,5 +115,11 @@ if __name__ == "__main__":
     init_recipe_data(recipe_number)
 
     determine_measure_words()
+
+    print(ingredients)
+    print()
+    print(steps)
+    print()
+    print(measure_words)
     # print()
     # load_recipes()
