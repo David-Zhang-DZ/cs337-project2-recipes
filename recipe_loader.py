@@ -25,6 +25,8 @@ def load_ingredients():
     return quantities
 
 def load_recipes():
+    prev_ingredients = []
+
     for step in steps:
         doc = NLP(step)
 
@@ -37,7 +39,11 @@ def load_recipes():
             elif token.dep_ == "dobj":
                 ingredients.append(token.text)
 
-        print(f"Action: {action}, ingredients:{', '.join(ingredients)}")
+        if ingredients:
+          print(f"Action: {action}, ingredients:{', '.join(ingredients)}")
+          prev_ingredients = ingredients
+        else:
+          print(f"Action: {action}, ingredients:{', '.join(prev_ingredients)}")
 
 def determine_measure_words():
   global measure_words
@@ -113,13 +119,9 @@ if __name__ == "__main__":
       exit(1)
 
     init_recipe_data(recipe_number)
-
     determine_measure_words()
 
-    print(ingredients)
+    load_ingredients()
     print()
-    print(steps)
-    print()
-    print(measure_words)
-    # print()
-    # load_recipes()
+    load_recipes()
+
