@@ -10,17 +10,27 @@ ingredients, steps, measure_words = [], [], set([]) # Will be filled in w/ comma
 
 def load_ingredients():
     quantities = {}
+
+    curr_ingredient, curr_quantity = None, None
+
     for ingredient in ingredients:
         doc = NLP(ingredient)
-        curr_quantity = None
+
         for token in doc:
             if token.dep_ == "ROOT":
-                quantities[token.text] = curr_quantity
-                modifiers = [child.text for child in token.children if child.text not in measure_words]
-                print(f"Ingredient: {' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}")
+                modifiers = [child.text for child in token.children if child.text not in measure_words and child.dep_ != "nummod"]
+                curr_ingredient = f"{' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}".strip()
+
+                quantities[curr_ingredient] = curr_quantity
+                curr_ingredient, curr_quantity = None, None
             elif token.dep_ == "nummod":
-                print(f"Quantity: {token.text} {token.head.text}")
-                curr_quantity = token.text + " " + token.head.text
+                curr_measure_word = ""
+                measure_word_matches = [e for e in ingredient.split(" ") if e in measure_words]
+
+                if measure_word_matches:
+                  curr_measure_word = measure_word_matches[0]
+
+                curr_quantity = f"{token.text} {curr_measure_word}".strip()
 
     return quantities
 
@@ -121,7 +131,8 @@ if __name__ == "__main__":
     init_recipe_data(recipe_number)
     determine_measure_words()
 
-    load_ingredients()
+    x = load_ingredients()
     print()
-    load_recipes()
-
+    print(x)
+    # print()
+    # load_recipes()
