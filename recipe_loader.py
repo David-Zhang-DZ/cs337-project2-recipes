@@ -15,16 +15,20 @@ def load_ingredients():
                     ]
 
     measure_words = ["teaspoon",  "cup", "tablespoon", "pound"]
-
+    quantities = {}
     for ingredient in ingredients:
         doc = nlp(ingredient)
-
+        curr_quantity = None
         for token in doc:
             if token.dep_ == "ROOT":
+                quantities[token.text] = curr_quantity
                 modifiers = [child.text for child in token.children if child.text not in measure_words]
                 print(f"Ingredient: {' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}")
             elif token.dep_ == "nummod":
                 print(f"Quantity: {token.text} {token.head.text}")
+                curr_quantity = token.text + " " + token.head.text
+                 
+    return quantities
 
 def load_recipes():
     text = "Heat a large skillet over medium heat. Cook and stir lean ground beef in the hot skillet until some of the fat starts to render, 3 to 4 minutes. Add onion and bell pepper; continue to cook until vegetables have softened and beef is cooked through, 3 to 5 more minutes."
