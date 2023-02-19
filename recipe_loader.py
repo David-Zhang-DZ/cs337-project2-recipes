@@ -34,7 +34,8 @@ def load_ingredients():
 
     return quantities
 
-def load_recipes():
+def load_recipe_actions():
+    actions = []
     prev_ingredients = []
 
     for step in steps:
@@ -50,10 +51,12 @@ def load_recipes():
                 ingredients.append(token.text)
 
         if ingredients:
-          print(f"Action: {action}, ingredients:{', '.join(ingredients)}")
+          actions.append((action, ', '.join(ingredients)))
           prev_ingredients = ingredients
         else:
-          print(f"Action: {action}, ingredients:{', '.join(prev_ingredients)}")
+          actions.append((action, ', '.join(prev_ingredients)))
+
+    return actions
 
 def determine_measure_words():
   global measure_words
@@ -131,8 +134,11 @@ if __name__ == "__main__":
     init_recipe_data(recipe_number)
     determine_measure_words()
 
-    x = load_ingredients()
+    ingredients = load_ingredients()
+    actions = load_recipe_actions()
+
+    print("INGREDIENTS:", ingredients)
     print()
-    print(x)
-    # print()
-    # load_recipes()
+    print("RAW STEPS:", steps)
+    print()
+    print("ACTIONS:", actions)
