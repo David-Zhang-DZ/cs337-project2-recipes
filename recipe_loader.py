@@ -4,23 +4,9 @@ import sys
 from sample_recipes import recipe1, recipe2, recipe3, recipe4, recipe5
 
 nlp = spacy.load("en_core_web_sm")
-# measure_words = ["ounces", "teaspoon",  "cup", "tablespoon", "pound"]
 ingredients, steps, measure_words = [], [], [] # Will be filled in w/ command-line args
 
 def load_ingredients():
-    ingredients = ["1 pound ground chicken",
-                    "1 large egg",
-                    "1/2 cup panko breadcrumbs",
-                    "1 teaspoon onion powder",
-                    "1/2 teaspoon garlic powder",
-                    "1/2 teaspoon kosher salt",
-                    "1/4 teaspoon ground black pepper",
-                    "4 large carrots, sliced into 1/4-inch thick rounds"
-                    
-                    
-                    ]
-
-    measure_words = ["teaspoon",  "cup", "tablespoon", "pound"]
     quantities = {}
     for ingredient in ingredients:
         doc = nlp(ingredient)
@@ -32,8 +18,9 @@ def load_ingredients():
                 print(f"Ingredient: {' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}")
             elif token.dep_ == "nummod":
                 print(f"Quantity: {token.text} {token.head.text}")
+                print("MISC", token.head.text)
                 curr_quantity = token.text + " " + token.head.text
-                 
+
     return quantities
 
 def load_recipes():
@@ -50,6 +37,19 @@ def load_recipes():
                 ingredients.append(token.text)
 
         print(f"Action: {action}, ingredients:{', '.join(ingredients)}")
+
+def determine_measure_words():
+  global measure_words
+  measure_words_dict = {}
+
+  for ingredient in ingredients:
+        doc = nlp(ingredient)
+
+        for token in doc:
+            if token.dep_ == "nummod" and token.head.dep_ != "ROOT":
+                if token.head.text not in measure_words_dict:
+                  measure_words_dict[token.head.text] = 1
+                  measure_words.append(token.head.text)
 
 # def parse_ingredients(raw_ingredients):
 
@@ -102,6 +102,6 @@ if __name__ == "__main__":
 
     init_recipe_data(recipe_number)
 
-    # load_ingredients()
+    determine_measure_words()
     # print()
     # load_recipes()
