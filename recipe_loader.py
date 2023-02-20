@@ -43,12 +43,23 @@ def load_recipe_actions():
 
         action = None
         ingredients = []
+        temperatures = []
 
         for token in doc:
             if token.dep_ == "ROOT":
                 action = token.text
             elif token.dep_ == "dobj":
                 ingredients.append(token.text)
+
+            elif token.pos_ == "ADP" or token.pos_ == "VERB":
+              for child in token.children:
+                if child.text == "°":
+                  for sub_child in child.children:
+                    if sub_child.dep_ == "nummod":
+                      temperatures.append(sub_child.text + child.text)
+        
+        if len(temperatures) > 0:
+          print(temperatures)    
 
         if ingredients:
           actions.append((action, ', '.join(ingredients)))
