@@ -14,7 +14,7 @@ def main():
         x = input("Input: ")
         if x == "q" or x == "quit":
             break
-        
+
         doc = nlp(x)
         object = "NO OBJECT!!!!"
         for token in doc:
@@ -38,8 +38,8 @@ def main():
             print(f"Object: {object}")
             if object in quantities:
                 print(quantities[object])
-            
-            
+
+
 
 def outputStep(step_list, idx):
     if idx < 0 or idx >= len(step_list):
