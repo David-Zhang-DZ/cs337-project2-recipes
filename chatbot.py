@@ -5,7 +5,7 @@ from recipe_loader import load_ingredients, init_recipe_data
 nlp = spacy.load("en_core_web_sm")
 
 def main():
-    steps = ["Wash the rice", "Put the rice in the rice cooker", "Turn on the rice cooker"]
+    steps, _ = init_recipe_data(1)
     idx = 0
     #outputStep(steps, idx)
     quantities = load_ingredients()

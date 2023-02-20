@@ -120,6 +120,8 @@ def init_recipe_data(recipe_number):
   ingredients = parse_ingredients(ingredients)
   steps = parse_steps(steps)
 
+  return steps, ingredients
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
       print("Please provide a recipe number")
