@@ -100,23 +100,24 @@ def parse_steps(raw_steps):
 
     return steps
 
-def init_recipe_data(recipe_query):
+def init_recipe_data(recipe_query=None, recipe_url=None):
   global ingredients
   global steps
 
-  URL = f"https://www.allrecipes.com/search?q={recipe_query}"
-  r = requests.get(URL)
+  if not recipe_url:
+    URL = f"https://www.allrecipes.com/search?q={recipe_query}"
+    r = requests.get(URL)
 
-  soup = BeautifulSoup(r.content, "html.parser")
-  all_results = soup.find("div", {"id": "search-results__content_1-0"})
-  first_page_results = all_results.find("div", {"id": "card-list_1-0"})
-  first_result_url = first_page_results.find("a")["href"]
+    soup = BeautifulSoup(r.content, "html.parser")
+    all_results = soup.find("div", {"id": "search-results__content_1-0"})
+    first_page_results = all_results.find("div", {"id": "card-list_1-0"})
+    recipe_url = first_page_results.find("a")["href"]
 
-  if not first_result_url:
-    print("Error: Could not find recipes")
-    exit(1)
+    if not recipe_url:
+      print("Error: Could not find recipes")
+      exit(1)
 
-  scraper = scrape_me(first_result_url)
+  scraper = scrape_me(recipe_url)
   ingredients, steps = scraper.ingredients(), scraper.instructions_list()
 
   ingredients = parse_ingredients(ingredients)
@@ -145,9 +146,11 @@ if __name__ == "__main__":
       print("Please provide a recipe query")
       exit(1)
 
-    recipe_query = "+".join(sys.argv[1:])
-    print(recipe_query)
-    init_recipe_data(recipe_query)
+    if str(sys.argv[1]).startswith("https://"):
+      init_recipe_data(recipe_url=str(sys.argv[1]))
+    else:
+      recipe_query = "+".join(sys.argv[1:])
+      init_recipe_data(recipe_query=recipe_query)
 
     ingredients = load_ingredients()
     actions = load_recipe_actions()
