@@ -145,7 +145,7 @@ if __name__ == "__main__":
     actions = load_recipe_actions()
 
     print("INGREDIENTS:", ingredients)
-    # print()
-    # print("RAW STEPS:", steps)
-    # print()
-    # print("ACTIONS:", actions)
+    print()
+    print("RAW STEPS:", steps)
+    print()
+    print("ACTIONS:", actions)
