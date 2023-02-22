@@ -4,6 +4,7 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 from recipe_scrapers import scrape_me
+from sample_recipes import recipe1, recipe2, recipe3, recipe4, recipe5
 
 NLP = spacy.load("en_core_web_sm")
 DEFAULT_MEASURE_WORDS = set(["teaspoon", "tablespoon", "cup", "pound", "ounce", "teaspoons", "tablespoons", "cups", "pounds", "ounces"])
@@ -132,6 +133,30 @@ def init_recipe_data(recipe_query=None, recipe_url=None):
 
   return steps, ingredients
 
+def init_sample_recipe(recipe_number):
+  global ingredients
+  global steps
+
+  if recipe_number == 1:
+    ingredients, steps = recipe1.INGREDIENTS, recipe1.STEPS
+
+  if recipe_number == 2:
+    ingredients, steps = recipe2.INGREDIENTS, recipe2.STEPS
+
+  if recipe_number == 3:
+    ingredients, steps = recipe3.INGREDIENTS, recipe3.STEPS
+
+  if recipe_number == 4:
+    ingredients, steps = recipe4.INGREDIENTS, recipe4.STEPS
+
+  if recipe_number == 5:
+    ingredients, steps = recipe5.INGREDIENTS, recipe5.STEPS
+
+  ingredients = parse_ingredients(ingredients)
+  steps = parse_steps(steps)
+
+  return steps, ingredients
+
 # def determine_measure_words():
 #   global measure_words
 
@@ -150,10 +175,13 @@ def init_recipe_data(recipe_query=None, recipe_url=None):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-      print("Please provide a recipe query")
+      print("Please provide a recipe query or number")
       exit(1)
 
-    if str(sys.argv[1]).startswith("https://"):
+    if sys.argv[1].isnumeric():
+      recipe_number = int(sys.argv[1])
+      init_sample_recipe(recipe_number)
+    elif str(sys.argv[1]).startswith("https://"):
       init_recipe_data(recipe_url=str(sys.argv[1]))
     else:
       recipe_query = "+".join(sys.argv[1:])
