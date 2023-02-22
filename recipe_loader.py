@@ -4,36 +4,41 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 from recipe_scrapers import scrape_me
+from sample_recipes import recipe1, recipe2, recipe3, recipe4, recipe5
 
 NLP = spacy.load("en_core_web_sm")
-DEFAULT_MEASURE_WORDS = set(["teaspoon", "tablespoon", "cup", "pound"])
-DEFAULT_TIME_WORDS = set(["days", "hours", "minutes", "seconds"])
-
-ingredients, steps, measure_words = [], [], set([]) # Will be filled in w/ command-line args
+DEFAULT_MEASURE_WORDS = set(["teaspoon", "tablespoon", "cup", "pound", "ounce", "teaspoons", "tablespoons", "cups", "pounds", "ounces"])
+DEFAULT_TIME_WORDS = set(["day", "hour", "minute", "second", "days", "hours", "minutes", "seconds"])
+ingredients, steps = [], [] # Will be filled in w/ command-line args
 
 def load_ingredients():
     quantities = {}
 
-    curr_ingredient, curr_quantity = None, None
+    token_filter = lambda s : s.text not in DEFAULT_MEASURE_WORDS and s.dep_ != "nummod" and s.pos_ in ["PROPN", "NOUN", "VERB", "ADJ"]
+    comma_surrounded_by_keywords = lambda doc, idx: doc[idx - 1].pos_ not in ["PROPN", "NOUN", "ADJ"] or doc[idx + 1].pos_ not in ["PROPN", "NOUN", "ADJ"]
+    start_noun_chunk = lambda text, noun_chunks: any([chunk.startswith(text) for chunk in noun_chunks])
 
     for ingredient in ingredients:
         doc = NLP(ingredient)
+        curr_ingredient, curr_quantity = [], ""
+        noun_chunks = [str(chunk) for chunk in list(doc.noun_chunks)]
 
-        for token in doc:
-            if token.dep_ == "ROOT":
-                modifiers = [child.text for child in token.children if child.text not in measure_words and child.dep_ != "nummod"]
-                curr_ingredient = f"{' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}".strip()
-
-                quantities[curr_ingredient] = curr_quantity
-                curr_ingredient, curr_quantity = None, None
+        for idx, token in enumerate(doc):
+            if token_filter(token):
+              curr_ingredient.append(token.text)
+            elif token.text == "," and (comma_surrounded_by_keywords(doc, idx) or not start_noun_chunk(doc[idx + 1].text, noun_chunks)):
+              break
             elif token.dep_ == "nummod":
                 curr_measure_word = ""
-                measure_word_matches = [e for e in ingredient.split(" ") if e in measure_words]
+                measure_word_matches = [e for e in ingredient.split(" ") if e in DEFAULT_MEASURE_WORDS]
 
                 if measure_word_matches:
                   curr_measure_word = measure_word_matches[0]
 
                 curr_quantity = f"{token.text} {curr_measure_word}".strip()
+
+        curr_ingredient = " ".join(curr_ingredient)
+        quantities[curr_ingredient] = curr_quantity if curr_quantity else None
 
     return quantities
 
@@ -63,12 +68,12 @@ def load_recipe_actions():
               # for child in token.children:
               #   if child.text == "°":
               #     for sub_child in child.children:
-                    
+
               #       if sub_child.dep_ == "nummod":
               #         temperatures.append(sub_child.text + child.text)
 
-          
-        
+
+
         if len(temperatures) > 0:
           print(temperatures)
 
@@ -129,6 +134,30 @@ def init_recipe_data(recipe_query=None, recipe_url=None):
 
   return steps, ingredients
 
+def init_sample_recipe(recipe_number):
+  global ingredients
+  global steps
+
+  if recipe_number == 1:
+    ingredients, steps = recipe1.INGREDIENTS, recipe1.STEPS
+
+  if recipe_number == 2:
+    ingredients, steps = recipe2.INGREDIENTS, recipe2.STEPS
+
+  if recipe_number == 3:
+    ingredients, steps = recipe3.INGREDIENTS, recipe3.STEPS
+
+  if recipe_number == 4:
+    ingredients, steps = recipe4.INGREDIENTS, recipe4.STEPS
+
+  if recipe_number == 5:
+    ingredients, steps = recipe5.INGREDIENTS, recipe5.STEPS
+
+  ingredients = parse_ingredients(ingredients)
+  steps = parse_steps(steps)
+
+  return steps, ingredients
+
 # def determine_measure_words():
 #   global measure_words
 
@@ -147,10 +176,13 @@ def init_recipe_data(recipe_query=None, recipe_url=None):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-      print("Please provide a recipe query")
+      print("Please provide a recipe query or number")
       exit(1)
 
-    if str(sys.argv[1]).startswith("https://"):
+    if sys.argv[1].isnumeric():
+      recipe_number = int(sys.argv[1])
+      init_sample_recipe(recipe_number)
+    elif str(sys.argv[1]).startswith("https://"):
       init_recipe_data(recipe_url=str(sys.argv[1]))
     else:
       recipe_query = "+".join(sys.argv[1:])
