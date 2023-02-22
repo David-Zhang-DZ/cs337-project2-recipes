@@ -6,33 +6,38 @@ from bs4 import BeautifulSoup
 from recipe_scrapers import scrape_me
 
 NLP = spacy.load("en_core_web_sm")
-DEFAULT_MEASURE_WORDS = set(["teaspoon", "tablespoon", "cup", "pound"])
+DEFAULT_MEASURE_WORDS = set(["teaspoon", "tablespoon", "cup", "pound", "ounce", "teaspoons", "tablespoons", "cups", "pounds", "ounces"])
 
-ingredients, steps, measure_words = [], [], set([]) # Will be filled in w/ command-line args
+ingredients, steps = [], [] # Will be filled in w/ command-line args
 
 def load_ingredients():
     quantities = {}
 
-    curr_ingredient, curr_quantity = None, None
+    token_filter = lambda s : s.text not in DEFAULT_MEASURE_WORDS and s.dep_ != "nummod" and s.pos_ in ["PROPN", "NOUN", "VERB", "ADJ"]
+    comma_surrounded_by_keywords = lambda doc, idx: doc[idx - 1].pos_ not in ["PROPN", "NOUN", "ADJ"] or doc[idx + 1].pos_ not in ["PROPN", "NOUN", "ADJ"]
+    start_noun_chunk = lambda text, noun_chunks: any([chunk.startswith(text) for chunk in noun_chunks])
 
     for ingredient in ingredients:
         doc = NLP(ingredient)
+        curr_ingredient, curr_quantity = [], ""
+        noun_chunks = [str(chunk) for chunk in list(doc.noun_chunks)]
 
-        for token in doc:
-            if token.dep_ == "ROOT":
-                modifiers = [child.text for child in token.children if child.text not in measure_words and child.dep_ != "nummod"]
-                curr_ingredient = f"{' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}".strip()
-
-                quantities[curr_ingredient] = curr_quantity
-                curr_ingredient, curr_quantity = None, None
+        for idx, token in enumerate(doc):
+            if token_filter(token):
+              curr_ingredient.append(token.text)
+            elif token.text == "," and (comma_surrounded_by_keywords(doc, idx) or not start_noun_chunk(doc[idx + 1].text, noun_chunks)):
+              break
             elif token.dep_ == "nummod":
                 curr_measure_word = ""
-                measure_word_matches = [e for e in ingredient.split(" ") if e in measure_words]
+                measure_word_matches = [e for e in ingredient.split(" ") if e in DEFAULT_MEASURE_WORDS]
 
                 if measure_word_matches:
                   curr_measure_word = measure_word_matches[0]
 
                 curr_quantity = f"{token.text} {curr_measure_word}".strip()
+
+        curr_ingredient = " ".join(curr_ingredient)
+        quantities[curr_ingredient] = curr_quantity if curr_quantity else None
 
     return quantities
 
@@ -56,17 +61,17 @@ def load_recipe_actions():
             if token.text.isnumeric() and doc[i + 1].text == "°":
               temperatures.append(doc[i].text + doc[i + 1].text)
 
-            
-               
+
+
               # for child in token.children:
               #   if child.text == "°":
               #     for sub_child in child.children:
-                    
+
               #       if sub_child.dep_ == "nummod":
               #         temperatures.append(sub_child.text + child.text)
 
-          
-        
+
+
         if len(temperatures) > 0:
           print(temperatures)
 
