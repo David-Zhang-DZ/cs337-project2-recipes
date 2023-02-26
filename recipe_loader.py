@@ -41,23 +41,58 @@ def load_ingredients():
 
     return quantities
 
+def parse_recipe_actions(raw_steps):
+  actions = []
+  prev_ingredients = []
+
+  for step in steps:
+      doc = NLP(step.lower())
+
+      action = None
+      ingredients = []
+      temperatures = []
+
+      for i, token in enumerate(doc):
+          if token.dep_ == "ROOT":
+              action = token.text
+          elif token.dep_ == "dobj":
+              ingredients.append(token.text)
+
+          if token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "F" or doc[i + 2].text == "C"):
+            temperatures.append(doc[i].text + doc[i + 1].text + doc[i + 2].text)
+
+      if ingredients:
+        actions.append((action, ', '.join(ingredients)))
+        prev_ingredients = ingredients
+      else:
+        actions.append((action, ', '.join(prev_ingredients)))
+
+      # print(in)
+
+  return actions
+
+
 def load_recipe_actions():
     actions = []
     prev_ingredients = []
 
     for step in steps:
-        doc = NLP(step)
+        doc = NLP(step.lower())
 
         action = None
         ingredients = []
         temperatures = []
 
-
         for i, token in enumerate(doc):
-            # print(token.text, token.dep_, token.pos_)
-            if token.dep_ == "ROOT":
+            if not action and token.dep_ == "ROOT":
                 action = token.text
-            elif token.dep_ == "dobj":
+
+            if token.text in DEFAULT_COOKING_ACTIONS:
+                action = token.text
+
+                print(token.text, [t.text for t in token.children])
+
+            if action and token.dep_ == "dobj" and token.pos_ in ["NOUN", "PROPN"]:
                 ingredients.append(token.text)
 
             if token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "F" or doc[i + 2].text == "C"):
@@ -81,7 +116,7 @@ def load_recipe_actions():
         else:
           actions.append((action, ', '.join(prev_ingredients)))
 
-        # print()
+        print()
 
     return actions
 
