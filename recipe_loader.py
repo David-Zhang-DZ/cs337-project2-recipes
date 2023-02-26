@@ -5,10 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 from recipe_scrapers import scrape_me
 from sample_recipes import recipe1, recipe2, recipe3, recipe4, recipe5
+from cooking_lexicon import DEFAULT_MEASURE_WORDS, DEFAULT_TIME_WORDS, DEFAULT_COOKING_ACTIONS
 
 NLP = spacy.load("en_core_web_sm")
-DEFAULT_MEASURE_WORDS = set(["teaspoon", "tablespoon", "cup", "pound", "ounce", "teaspoons", "tablespoons", "cups", "pounds", "ounces"])
-DEFAULT_TIME_WORDS = set(["day", "hour", "minute", "second", "days", "hours", "minutes", "seconds"])
 ingredients, steps = [], [] # Will be filled in w/ command-line args
 
 def load_ingredients():
@@ -42,30 +41,72 @@ def load_ingredients():
 
     return quantities
 
+def parse_recipe_actions(raw_steps):
+  actions = []
+  prev_ingredients = []
+
+  for step in steps:
+      doc = NLP(step.lower())
+
+      action = None
+      ingredients = []
+      temperatures = []
+
+      for i, token in enumerate(doc):
+          if token.dep_ == "ROOT":
+              action = token.text
+          elif token.dep_ == "dobj":
+              ingredients.append(token.text)
+
+          if token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "F" or doc[i + 2].text == "C"):
+            temperatures.append(doc[i].text + doc[i + 1].text + doc[i + 2].text)
+
+      if ingredients:
+        actions.append((action, ', '.join(ingredients)))
+        prev_ingredients = ingredients
+      else:
+        actions.append((action, ', '.join(prev_ingredients)))
+
+      # print(in)
+
+  return actions
+
+
 def load_recipe_actions():
     actions = []
-    prev_ingredients = []
+    prev_ingredient = None
 
 
     for step in steps:
-        doc = NLP(step)
+        doc = NLP(step.lower())
 
         action = None
-        ingredients = []
+        ingredient = None
         temperatures = []
 
+        has_verbs = any([token.pos_ == "VERB" for token in doc])
 
         for i, token in enumerate(doc):
-            if token.dep_ == "ROOT":
+            if not has_verbs and i == 0:
+              action = token.text
+
+            if not action and token.dep_ == "ROOT":
                 action = token.text
-            elif token.dep_ == "dobj":
-                ingredients.append(token.text)
+
+            if token.text in DEFAULT_COOKING_ACTIONS and token.pos_ != "NOUN":
+                action = token.text
+
+            valid_ingredient = (action != token.text and not ingredient)
+            valid_dep_and_pos = (has_verbs and token.dep_ in ["dobj", "conj", "dep"] and token.pos_ in ["NOUN", "PROPN"]) or (not has_verbs and token.dep_ == "ROOT")
+
+            if valid_ingredient and valid_dep_and_pos:
+                ingredient = token.text
 
             if token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "F" or doc[i + 2].text == "C"):
               temperatures.append(doc[i].text + doc[i + 1].text + doc[i + 2].text)
 
-            if token.text in DEFAULT_TIME_WORDS:
-              print(token.dep_, [child.text for child in token.children])
+            # if token.text in DEFAULT_TIME_WORDS:
+              # print(token.dep_, [child.text for child in token.children])
               # for child in token.children:
               #   if child.text == "°":
               #     for sub_child in child.children:
@@ -73,16 +114,16 @@ def load_recipe_actions():
               #       if sub_child.dep_ == "nummod":
               #         temperatures.append(sub_child.text + child.text)
 
-
-
         if len(temperatures) > 0:
           print(temperatures)
 
-        if ingredients:
-          actions.append((action, ', '.join(ingredients)))
-          prev_ingredients = ingredients
+        if ingredient:
+          actions.append((action, ingredient))
+          prev_ingredient = ingredient
         else:
-          actions.append((action, ', '.join(prev_ingredients)))
+          actions.append((action, prev_ingredient))
+
+        print()
 
     return actions
 
