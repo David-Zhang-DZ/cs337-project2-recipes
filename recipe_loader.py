@@ -54,13 +54,14 @@ def load_recipe_actions():
         temperatures = []
 
         for i, token in enumerate(doc):
+            print(token.text, token.dep_, token.pos_)
             if token.dep_ == "ROOT":
                 action = token.text
             elif token.dep_ == "dobj":
                 ingredients.append(token.text)
 
-            if token.text.isnumeric() and doc[i + 1].text == "°":
-              temperatures.append(doc[i].text + doc[i + 1].text)
+            # if token.text.isnumeric() and doc[i + 1].text == "°":
+            #   temperatures.append(doc[i].text + doc[i + 1].text)
 
 
 
@@ -73,14 +74,16 @@ def load_recipe_actions():
 
 
 
-        if len(temperatures) > 0:
-          print(temperatures)
+        # if len(temperatures) > 0:
+        #   print(temperatures)
 
         if ingredients:
           actions.append((action, ', '.join(ingredients)))
           prev_ingredients = ingredients
         else:
           actions.append((action, ', '.join(prev_ingredients)))
+
+        print()
 
     return actions
 
