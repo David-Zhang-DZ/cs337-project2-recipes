@@ -10,6 +10,25 @@ from cooking_lexicon import DEFAULT_MEASURE_WORDS, DEFAULT_TIME_WORDS, DEFAULT_C
 NLP = spacy.load("en_core_web_sm")
 ingredients, steps = [], [] # Will be filled in w/ command-line args
 
+class Step:
+  def __init__(self, text, action, temperature, time):
+    self.text = text
+    self.action = action
+    self.temperature = temperature
+    self.time = time
+
+  def to_string(self):
+    print("RAW TEXT:", self.text)
+    print("ACTION:", self.action)
+
+    if self.temperature is not None:
+      print("TEMPERATURE:", self.temperature)
+
+    if self.time is not None:
+      print("TIME:", self.time)
+
+    print()
+
 def load_ingredients():
     quantities = {}
 
@@ -41,48 +60,17 @@ def load_ingredients():
 
     return quantities
 
-def parse_recipe_actions(raw_steps):
-  actions = []
-  prev_ingredients = []
-
-  for step in steps:
-      doc = NLP(step.lower())
-
-      action = None
-      ingredients = []
-      temperatures = []
-
-      for i, token in enumerate(doc):
-          if token.dep_ == "ROOT":
-              action = token.text
-          elif token.dep_ == "dobj":
-              ingredients.append(token.text)
-
-          if token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "F" or doc[i + 2].text == "C"):
-            temperatures.append(doc[i].text + doc[i + 1].text + doc[i + 2].text)
-
-      if ingredients:
-        actions.append((action, ', '.join(ingredients)))
-        prev_ingredients = ingredients
-      else:
-        actions.append((action, ', '.join(prev_ingredients)))
-
-      # print(in)
-
-  return actions
-
 
 def load_recipe_actions():
-    actions = []
+    res = []
     prev_ingredient = None
-
 
     for step in steps:
         doc = NLP(step.lower())
 
         action = None
         ingredient = None
-        temperatures = []
+        temperature = None
 
         has_verbs = any([token.pos_ == "VERB" for token in doc])
 
@@ -102,8 +90,11 @@ def load_recipe_actions():
             if valid_ingredient and valid_dep_and_pos:
                 ingredient = token.text
 
-            if token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "F" or doc[i + 2].text == "C"):
-              temperatures.append(doc[i].text + doc[i + 1].text + doc[i + 2].text)
+            valid_token_parse = (token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "f" or doc[i + 2].text == "c"))
+
+            if not temperature and valid_token_parse:
+              print("TESTING", temperature)
+              temperature = doc[i].text + doc[i + 1].text + doc[i + 2].text.upper()
 
             # if token.text in DEFAULT_TIME_WORDS:
               # print(token.dep_, [child.text for child in token.children])
@@ -114,18 +105,18 @@ def load_recipe_actions():
               #       if sub_child.dep_ == "nummod":
               #         temperatures.append(sub_child.text + child.text)
 
-        if len(temperatures) > 0:
-          print(temperatures)
+        current_action_parse = None
 
         if ingredient:
-          actions.append((action, ingredient))
+          current_action_parse = (action, ingredient)
           prev_ingredient = ingredient
         else:
-          actions.append((action, prev_ingredient))
+          current_action_parse = (action, prev_ingredient)
 
-        print()
+        step_object = Step(step, current_action_parse, temperature, None)
+        res.append(step_object)
 
-    return actions
+    return res
 
 def parse_ingredients(raw_ingredients):
   ingredients = []
@@ -178,14 +169,14 @@ def init_recipe_data(recipe_query=None, recipe_url=None):
 
 def init_sample_recipe(recipe_number):
   global ingredients
-  global steps 
+  global steps
 
   if recipe_number == 1:
     ingredients, steps = recipe1.INGREDIENTS, recipe1.STEPS
 
   if recipe_number == 2:
     ingredients, steps = recipe2.INGREDIENTS, recipe2.STEPS
-    
+
   if recipe_number == 3:
     ingredients, steps = recipe3.INGREDIENTS, recipe3.STEPS
 
@@ -231,10 +222,10 @@ if __name__ == "__main__":
       init_recipe_data(recipe_query=recipe_query)
 
     ingredients = load_ingredients()
-    actions = load_recipe_actions()
+    parsed_steps = load_recipe_actions()
 
     print("INGREDIENTS:", ingredients)
     print()
-    print("RAW STEPS:", steps)
-    print()
-    print("ACTIONS:", actions)
+
+    for s in parsed_steps:
+      s.to_string()
