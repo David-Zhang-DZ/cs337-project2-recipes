@@ -17,6 +17,8 @@ def load_ingredients():
         doc = NLP(ingredient)
 
         for token in doc:
+            print(token.text, token.dep_, token.head.text, token.pos_,
+                [child for child in token.children])
             if token.dep_ == "ROOT":
                 modifiers = [child.text for child in token.children if child.text not in measure_words and child.dep_ != "nummod"]
                 curr_ingredient = f"{' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}".strip()
@@ -45,6 +47,8 @@ def load_recipe_actions():
         ingredients = []
 
         for token in doc:
+            print(token.text, token.dep_, token.head.text, token.pos_,
+                [child for child in token.children])
             if token.dep_ == "ROOT":
                 action = token.text
             elif token.dep_ == "dobj":
