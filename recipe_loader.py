@@ -46,6 +46,7 @@ def load_recipe_actions():
     actions = []
     prev_ingredients = []
 
+
     for step in steps:
         doc = NLP(step)
 
@@ -136,14 +137,14 @@ def init_recipe_data(recipe_query=None, recipe_url=None):
 
 def init_sample_recipe(recipe_number):
   global ingredients
-  global steps
+  global steps 
 
   if recipe_number == 1:
     ingredients, steps = recipe1.INGREDIENTS, recipe1.STEPS
 
   if recipe_number == 2:
     ingredients, steps = recipe2.INGREDIENTS, recipe2.STEPS
-
+    
   if recipe_number == 3:
     ingredients, steps = recipe3.INGREDIENTS, recipe3.STEPS
 
