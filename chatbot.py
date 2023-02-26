@@ -1,6 +1,7 @@
 import spacy
 import re
 from pyyoutube import Api
+from googlesearch import search
 from recipe_loader import load_ingredients, init_recipe_data
 
 nlp = spacy.load("en_core_web_sm")
@@ -24,6 +25,12 @@ def main():
             videos = api.search_by_keywords(q="how to " + match[1], search_type=["video"], limit=5)
             print(f"https://www.youtube.com/watch?v={videos.items[0].id.videoId}")
         match = re.search('what is (.*)', x.lower()) #Google Search
+        if match:
+            print(match[1])
+            results = search(f"what is {match[1]}", num_results=3)
+            for result in results:
+                print(result)
+            
 
         #match = re.search("how much (.*) do i need", x.lower())
         
