@@ -19,18 +19,6 @@ def load_ingredients():
 
     for ingredient in ingredients:
         doc = NLP(ingredient)
-<<<<<<< HEAD
-
-        for token in doc:
-            print(token.text, token.dep_, token.head.text, token.pos_,
-                [child for child in token.children])
-            if token.dep_ == "ROOT":
-                modifiers = [child.text for child in token.children if child.text not in measure_words and child.dep_ != "nummod"]
-                curr_ingredient = f"{' '.join(modifiers) if len(modifiers) > 0 else ''} {token.text}".strip()
-
-                quantities[curr_ingredient] = curr_quantity
-                curr_ingredient, curr_quantity = None, None
-=======
         curr_ingredient, curr_quantity = [], ""
         noun_chunks = [str(chunk) for chunk in list(doc.noun_chunks)]
 
@@ -39,7 +27,6 @@ def load_ingredients():
               curr_ingredient.append(token.text)
             elif token.text == "," and (comma_surrounded_by_keywords(doc, idx) or not start_noun_chunk(doc[idx + 1].text, noun_chunks)):
               break
->>>>>>> 2c64b283df01fb0dbb7f839bce10179229019379
             elif token.dep_ == "nummod":
                 curr_measure_word = ""
                 measure_word_matches = [e for e in ingredient.split(" ") if e in DEFAULT_MEASURE_WORDS]
@@ -99,18 +86,11 @@ def load_recipe_actions():
 
         has_verbs = any([token.pos_ == "VERB" for token in doc])
 
-<<<<<<< HEAD
-        for token in doc:
-            print(token.text, token.dep_, token.head.text, token.pos_,
-                [child for child in token.children])
-            if token.dep_ == "ROOT":
-=======
         for i, token in enumerate(doc):
             if not has_verbs and i == 0:
               action = token.text
 
             if not action and token.dep_ == "ROOT":
->>>>>>> 2c64b283df01fb0dbb7f839bce10179229019379
                 action = token.text
 
             if token.text in DEFAULT_COOKING_ACTIONS and token.pos_ != "NOUN":
