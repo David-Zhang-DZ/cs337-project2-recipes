@@ -71,6 +71,7 @@ def load_recipe_actions():
         action = None
         ingredient = None
         temperature = None
+        time = None
 
         has_verbs = any([token.pos_ == "VERB" for token in doc])
 
@@ -90,11 +91,16 @@ def load_recipe_actions():
             if valid_ingredient and valid_dep_and_pos:
                 ingredient = token.text
 
-            valid_token_parse = (token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "f" or doc[i + 2].text == "c"))
+            valid_temp_parse = (token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "f" or doc[i + 2].text == "c"))
 
-            if not temperature and valid_token_parse:
+            if not temperature and valid_temp_parse:
               print("TESTING", temperature)
               temperature = doc[i].text + doc[i + 1].text + doc[i + 2].text.upper()
+
+            valid_time_parse = (token.text.isnumeric() and doc[i + 1].text in DEFAULT_TIME_WORDS)
+
+            if not time and valid_time_parse:
+               time = doc[i].text + " " + doc[i + 1].text
 
             # if token.text in DEFAULT_TIME_WORDS:
               # print(token.dep_, [child.text for child in token.children])
@@ -113,7 +119,7 @@ def load_recipe_actions():
         else:
           current_action_parse = (action, prev_ingredient)
 
-        step_object = Step(step, current_action_parse, temperature, None)
+        step_object = Step(step, current_action_parse, temperature, time)
         res.append(step_object)
 
     return res
