@@ -5,10 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 from recipe_scrapers import scrape_me
 from sample_recipes import recipe1, recipe2, recipe3, recipe4, recipe5
+from cooking_lexicon import DEFAULT_MEASURE_WORDS, DEFAULT_TIME_WORDS, DEFAULT_COOKING_ACTIONS
 
 NLP = spacy.load("en_core_web_sm")
-DEFAULT_MEASURE_WORDS = set(["teaspoon", "tablespoon", "cup", "pound", "ounce", "teaspoons", "tablespoons", "cups", "pounds", "ounces"])
-DEFAULT_TIME_WORDS = set(["day", "hour", "minute", "second", "days", "hours", "minutes", "seconds"])
 ingredients, steps = [], [] # Will be filled in w/ command-line args
 
 def load_ingredients():
@@ -55,7 +54,7 @@ def load_recipe_actions():
 
 
         for i, token in enumerate(doc):
-            print(token.text, token.dep_, token.pos_)
+            # print(token.text, token.dep_, token.pos_)
             if token.dep_ == "ROOT":
                 action = token.text
             elif token.dep_ == "dobj":
@@ -64,8 +63,8 @@ def load_recipe_actions():
             if token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "F" or doc[i + 2].text == "C"):
               temperatures.append(doc[i].text + doc[i + 1].text + doc[i + 2].text)
 
-            if token.text in DEFAULT_TIME_WORDS:
-              print(token.dep_, [child.text for child in token.children])
+            # if token.text in DEFAULT_TIME_WORDS:
+              # print(token.dep_, [child.text for child in token.children])
               # for child in token.children:
               #   if child.text == "°":
               #     for sub_child in child.children:
@@ -73,10 +72,8 @@ def load_recipe_actions():
               #       if sub_child.dep_ == "nummod":
               #         temperatures.append(sub_child.text + child.text)
 
-
-
-        # if len(temperatures) > 0:
-        #   print(temperatures)
+        if len(temperatures) > 0:
+          print(temperatures)
 
         if ingredients:
           actions.append((action, ', '.join(ingredients)))
@@ -84,7 +81,7 @@ def load_recipe_actions():
         else:
           actions.append((action, ', '.join(prev_ingredients)))
 
-        print()
+        # print()
 
     return actions
 
