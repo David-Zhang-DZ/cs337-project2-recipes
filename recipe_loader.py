@@ -96,7 +96,7 @@ def load_recipe_actions():
                 action = token.text
 
             valid_ingredient = (action != token.text and not ingredient)
-            valid_dep_and_pos = (has_verbs and token.dep_ in ["dobj", "conj", "dep"] and token.pos_ in ["NOUN", "PROPN"]) or (not has_verbs and token.dep_ == "ROOT")
+            valid_dep_and_pos = (has_verbs and token.dep_ in ["dobj", "conj", "dep", "compound"] and token.pos_ in ["NOUN", "PROPN"]) or (not has_verbs and token.dep_ == "ROOT")
 
             if valid_ingredient and valid_dep_and_pos:
                 ingredient = token.text
