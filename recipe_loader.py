@@ -8,7 +8,7 @@ from sample_recipes import recipe1, recipe2, recipe3, recipe4, recipe5
 
 NLP = spacy.load("en_core_web_sm")
 DEFAULT_MEASURE_WORDS = set(["teaspoon", "tablespoon", "cup", "pound", "ounce", "teaspoons", "tablespoons", "cups", "pounds", "ounces"])
-
+DEFAULT_TIME_WORDS = set(["day", "hour", "minute", "second", "days", "hours", "minutes", "seconds"])
 ingredients, steps = [], [] # Will be filled in w/ command-line args
 
 def load_ingredients():
@@ -53,6 +53,7 @@ def load_recipe_actions():
         ingredients = []
         temperatures = []
 
+
         for i, token in enumerate(doc):
             print(token.text, token.dep_, token.pos_)
             if token.dep_ == "ROOT":
@@ -60,11 +61,11 @@ def load_recipe_actions():
             elif token.dep_ == "dobj":
                 ingredients.append(token.text)
 
-            # if token.text.isnumeric() and doc[i + 1].text == "°":
-            #   temperatures.append(doc[i].text + doc[i + 1].text)
+            if token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "F" or doc[i + 2].text == "C"):
+              temperatures.append(doc[i].text + doc[i + 1].text + doc[i + 2].text)
 
-
-
+            if token.text in DEFAULT_TIME_WORDS:
+              print(token.dep_, [child.text for child in token.children])
               # for child in token.children:
               #   if child.text == "°":
               #     for sub_child in child.children:
