@@ -60,7 +60,6 @@ def load_ingredients():
 
     return quantities
 
-
 def load_recipe_actions():
     res = []
     prev_ingredient = None
