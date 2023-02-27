@@ -6,30 +6,65 @@ from bs4 import BeautifulSoup
 from recipe_scrapers import scrape_me
 from sample_recipes import recipe1, recipe2, recipe3, recipe4, recipe5
 from cooking_lexicon import DEFAULT_MEASURE_WORDS, DEFAULT_TIME_WORDS, DEFAULT_COOKING_ACTIONS
+from recipe_step import RecipeStep
 
 NLP = spacy.load("en_core_web_sm")
-ingredients, steps = [], [] # Will be filled in w/ command-line args
 
-class Step:
-  def __init__(self, text, action, temperature, time):
-    self.text = text
-    self.action = action
-    self.temperature = temperature
-    self.time = time
+class Recipe:
+  def __init__(self, data_source):
+    self.ingredients = []
+    self.steps = []
 
-  def to_string(self):
-    print("RAW TEXT:", self.text)
-    print("ACTION:", self.action)
+    self.ingredient_quantities = {}
+    self.parsed_steps = []
 
-    if self.temperature is not None:
-      print("TEMPERATURE:", self.temperature)
+    self.init_recipe_data(data_source)
+    self.load_ingredients()
+    self.load_recipe_steps()
 
-    if self.time is not None:
-      print("TIME:", self.time)
+  def init_recipe_data(self, data_source):
+    if data_source.isnumeric():
+      recipe_number = int(data_source)
 
-    print()
+      if recipe_number == 1:
+        self.ingredients, self.steps = recipe1.INGREDIENTS, recipe1.STEPS
 
-def load_ingredients():
+      if recipe_number == 2:
+        self.ingredients, self.steps = recipe2.INGREDIENTS, recipe2.STEPS
+
+      if recipe_number == 3:
+        self.ingredients, self.steps = recipe3.INGREDIENTS, recipe3.STEPS
+
+      if recipe_number == 4:
+        self.ingredients, self.steps = recipe4.INGREDIENTS, recipe4.STEPS
+
+      if recipe_number == 5:
+        self.ingredients, self.steps = recipe5.INGREDIENTS, recipe5.STEPS
+    else:
+      recipe_url = data_source.copy()
+
+      if not recipe_url.startswith("https://"):
+        recipe_query = "+".join(data_source)
+        recipe_url = f"https://www.allrecipes.com/search?q={recipe_query}"
+
+      r = requests.get(recipe_url)
+
+      soup = BeautifulSoup(r.content, "html.parser")
+      all_results = soup.find("div", {"id": "search-results__content_1-0"})
+      first_page_results = all_results.find("div", {"id": "card-list_1-0"})
+      recipe_url = first_page_results.find("a")["href"]
+
+      if not recipe_url:
+        print("Error: Could not find recipes")
+        exit(1)
+
+      scraper = scrape_me(recipe_url)
+      self.ingredients, self.steps = scraper.ingredients(), scraper.instructions_list()
+
+    self.ingredients = self.parse_ingredients(self.ingredients)
+    self.steps = self.parse_steps(steps)
+
+  def load_ingredients(self):
     quantities = {}
 
     token_filter = lambda s : s.text not in DEFAULT_MEASURE_WORDS and s.dep_ != "nummod" and s.pos_ in ["PROPN", "NOUN", "VERB", "ADJ"]
@@ -58,9 +93,9 @@ def load_ingredients():
         curr_ingredient = " ".join(curr_ingredient)
         quantities[curr_ingredient] = curr_quantity if curr_quantity else None
 
-    return quantities
+    self.ingredient_quantities = quantities.copy()
 
-def load_recipe_actions():
+  def load_recipe_steps(self):
     res = []
     prev_ingredient = None
 
@@ -91,24 +126,13 @@ def load_recipe_actions():
                 ingredient = token.text
 
             valid_temp_parse = (token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "f" or doc[i + 2].text == "c"))
+            valid_time_parse = (token.text.isnumeric() and doc[i + 1].text in DEFAULT_TIME_WORDS)
 
             if not temperature and valid_temp_parse:
-              print("TESTING", temperature)
               temperature = doc[i].text + doc[i + 1].text + doc[i + 2].text.upper()
-
-            valid_time_parse = (token.text.isnumeric() and doc[i + 1].text in DEFAULT_TIME_WORDS)
 
             if not time and valid_time_parse:
                time = doc[i].text + " " + doc[i + 1].text
-
-            # if token.text in DEFAULT_TIME_WORDS:
-              # print(token.dep_, [child.text for child in token.children])
-              # for child in token.children:
-              #   if child.text == "°":
-              #     for sub_child in child.children:
-
-              #       if sub_child.dep_ == "nummod":
-              #         temperatures.append(sub_child.text + child.text)
 
         current_action_parse = None
 
@@ -118,23 +142,23 @@ def load_recipe_actions():
         else:
           current_action_parse = (action, prev_ingredient)
 
-        step_object = Step(step, current_action_parse, temperature, time)
+        step_object = RecipeStep(step, current_action_parse, temperature, time)
         res.append(step_object)
 
-    return res
+    self.parsed_steps = res.copy()
 
-def parse_ingredients(raw_ingredients):
-  ingredients = []
+  def parse_ingredients(self, raw_ingredients):
+    ingredients = []
 
-  for ingredient in raw_ingredients:
-    ingredient = re.sub("\(.*?\)", "", ingredient)
-    ingredient = re.sub(" +", " ", ingredient)
+    for ingredient in raw_ingredients:
+      ingredient = re.sub("\(.*?\)", "", ingredient)
+      ingredient = re.sub(" +", " ", ingredient)
 
-    ingredients.append(ingredient)
+      ingredients.append(ingredient)
 
-  return ingredients
+    return ingredients
 
-def parse_steps(raw_steps):
+  def parse_steps(self, raw_steps):
     steps = []
 
     for s in raw_steps:
@@ -146,91 +170,3 @@ def parse_steps(raw_steps):
           steps.append(subres.strip())
 
     return steps
-
-def init_recipe_data(recipe_query=None, recipe_url=None):
-  global ingredients
-  global steps
-
-  if not recipe_url:
-    URL = f"https://www.allrecipes.com/search?q={recipe_query}"
-    r = requests.get(URL)
-
-    soup = BeautifulSoup(r.content, "html.parser")
-    all_results = soup.find("div", {"id": "search-results__content_1-0"})
-    first_page_results = all_results.find("div", {"id": "card-list_1-0"})
-    recipe_url = first_page_results.find("a")["href"]
-
-    if not recipe_url:
-      print("Error: Could not find recipes")
-      exit(1)
-
-  scraper = scrape_me(recipe_url)
-  ingredients, steps = scraper.ingredients(), scraper.instructions_list()
-
-  ingredients = parse_ingredients(ingredients)
-  steps = parse_steps(steps)
-
-  return steps, ingredients
-
-def init_sample_recipe(recipe_number):
-  global ingredients
-  global steps
-
-  if recipe_number == 1:
-    ingredients, steps = recipe1.INGREDIENTS, recipe1.STEPS
-
-  if recipe_number == 2:
-    ingredients, steps = recipe2.INGREDIENTS, recipe2.STEPS
-
-  if recipe_number == 3:
-    ingredients, steps = recipe3.INGREDIENTS, recipe3.STEPS
-
-  if recipe_number == 4:
-    ingredients, steps = recipe4.INGREDIENTS, recipe4.STEPS
-
-  if recipe_number == 5:
-    ingredients, steps = recipe5.INGREDIENTS, recipe5.STEPS
-
-  ingredients = parse_ingredients(ingredients)
-  steps = parse_steps(steps)
-
-  return steps, ingredients
-
-# def determine_measure_words():
-#   global measure_words
-
-#   for k in DEFAULT_MEASURE_WORDS:
-#     measure_words.add(k)
-
-#   for ingredient in ingredients:
-#         doc = NLP(ingredient)
-
-#         for token in doc:
-#             if token.dep_ == "nummod" and token.head.dep_ != "ROOT":
-#                 measure_word = token.head.text
-
-#                 if measure_word not in measure_words:
-#                   measure_words.add(measure_word)
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-      print("Please provide a recipe query or number")
-      exit(1)
-
-    if sys.argv[1].isnumeric():
-      recipe_number = int(sys.argv[1])
-      init_sample_recipe(recipe_number)
-    elif str(sys.argv[1]).startswith("https://"):
-      init_recipe_data(recipe_url=str(sys.argv[1]))
-    else:
-      recipe_query = "+".join(sys.argv[1:])
-      init_recipe_data(recipe_query=recipe_query)
-
-    ingredients = load_ingredients()
-    parsed_steps = load_recipe_actions()
-
-    print("INGREDIENTS:", ingredients)
-    print()
-
-    for s in parsed_steps:
-      s.to_string()
