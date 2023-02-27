@@ -161,7 +161,9 @@ class Recipe:
     steps = []
 
     for s in raw_steps:
-      s = s.replace("\n", "")
+      s = s.replace("\n", "").replace("\r", "")
+      s = re.sub(' +', ' ', s)
+
       res = re.split("[.:;]", s)
 
       for subres in res:
