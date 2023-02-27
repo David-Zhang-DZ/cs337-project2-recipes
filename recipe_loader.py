@@ -1,6 +1,5 @@
 import spacy
 import re
-import sys
 import requests
 from bs4 import BeautifulSoup
 from recipe_scrapers import scrape_me
@@ -41,28 +40,28 @@ class Recipe:
       if recipe_number == 5:
         self.ingredients, self.steps = recipe5.INGREDIENTS, recipe5.STEPS
     else:
-      recipe_url = data_source.copy()
+      if not data_source.startswith("https://"):
+        data_source = f"https://www.allrecipes.com/search?q={data_source}"
+        r = requests.get(data_source)
+        soup = BeautifulSoup(r.content, "html.parser")
 
-      if not recipe_url.startswith("https://"):
-        recipe_query = "+".join(data_source)
-        recipe_url = f"https://www.allrecipes.com/search?q={recipe_query}"
+        all_results = soup.find("div", {"id": "search-results__content_1-0"})
+        first_page_results = all_results.find("div", {"id": "card-list_1-0"})
+        data_source = first_page_results.find("a")["href"]
 
-      r = requests.get(recipe_url)
-
-      soup = BeautifulSoup(r.content, "html.parser")
-      all_results = soup.find("div", {"id": "search-results__content_1-0"})
-      first_page_results = all_results.find("div", {"id": "card-list_1-0"})
-      recipe_url = first_page_results.find("a")["href"]
-
-      if not recipe_url:
+      if not data_source:
         print("Error: Could not find recipes")
         exit(1)
 
-      scraper = scrape_me(recipe_url)
+      scraper = scrape_me(data_source)
       self.ingredients, self.steps = scraper.ingredients(), scraper.instructions_list()
 
+      if not self.ingredients or not self.steps:
+        print("Invalid recipe lookup (bad link)")
+        exit(1)
+
     self.ingredients = self.parse_ingredients(self.ingredients)
-    self.steps = self.parse_steps(steps)
+    self.steps = self.parse_steps(self.steps)
 
   def load_ingredients(self):
     quantities = {}
@@ -71,7 +70,7 @@ class Recipe:
     comma_surrounded_by_keywords = lambda doc, idx: doc[idx - 1].pos_ not in ["PROPN", "NOUN", "ADJ"] or doc[idx + 1].pos_ not in ["PROPN", "NOUN", "ADJ"]
     start_noun_chunk = lambda text, noun_chunks: any([chunk.startswith(text) for chunk in noun_chunks])
 
-    for ingredient in ingredients:
+    for ingredient in self.ingredients:
         doc = NLP(ingredient)
         curr_ingredient, curr_quantity = [], ""
         noun_chunks = [str(chunk) for chunk in list(doc.noun_chunks)]
@@ -99,7 +98,7 @@ class Recipe:
     res = []
     prev_ingredient = None
 
-    for step in steps:
+    for step in self.steps:
         doc = NLP(step.lower())
 
         action = None
