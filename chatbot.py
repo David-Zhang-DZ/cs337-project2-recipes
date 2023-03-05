@@ -23,8 +23,8 @@ def main(data_source):
 
         valid_input = False
 
-        regex_searches = ["how do i (.*)", "what is (.*)", "how much (.*) do i need"]
-        exact_matches = ["what temperature", "how long", "next", "back", "repeat"]
+        regex_searches = ["how do i (.*)", "what is (.*)", "how much (.*) do i need", "go to step (.*)", "what can i substitute for (.*)"]
+        exact_matches = ["what temperature", "how long", "next", "back", "repeat", "show me all ingredients", "how"]
 
         for i, regex in enumerate(regex_searches):
           match = re.search(regex, x)
@@ -37,14 +37,19 @@ def main(data_source):
               results = search(f"what is {match[1]}", num_results=3)
               for result in results:
                   print(result)
-            else:
+            elif i == 2:
               quantity = ingredient_lookup(recipe_data.ingredient_quantities, match[1])
-
               if quantity is None:
                 print(f"Response: Unsure how much quantity needed for ingredient '{match[1]}'; please try another query")
               else:
                 print(quantity)
-
+            elif i == 3:
+              idx = int(match[1]) - 1
+              output_step(recipe_data.steps, idx)
+            elif i == 4:
+              results = search(f"what can I substitute for {match[1]}", num_results=3)
+              for result in results:
+                  print(result)
             valid_input = True
             break
 
@@ -76,9 +81,14 @@ def main(data_source):
 
                 idx -= 1
                 output_step(recipe_data.steps, idx)
-              else:
+              elif i == 4:
                 output_step(recipe_data.steps, idx)
-
+              elif i == 5:
+                print(recipe_data.ingredient_quantities)
+              elif i == 6:
+                action = recipe_data.parsed_steps[idx].action
+                videos = API.search_by_keywords(q="how to " + action[0] + " " + action[1], search_type=["video"], limit=5)
+                print(f"https://www.youtube.com/watch?v={videos.items[0].id.videoId}")
               valid_input = True
               break
 
