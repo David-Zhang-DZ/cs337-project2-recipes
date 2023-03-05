@@ -124,11 +124,14 @@ class Recipe:
             if valid_ingredient and valid_dep_and_pos:
                 ingredient = token.text
 
-            valid_temp_parse = (token.text.isnumeric() and doc[i + 1].text == "°" and (doc[i + 2].text == "f" or doc[i + 2].text == "c"))
+            valid_temp_parse = (token.text.isnumeric() and (doc[i + 1].text == "°" or doc[i + 1].text == "degrees") and (doc[i + 2].text == "f" or doc[i + 2].text == "c"))
             valid_time_parse = (token.text.isnumeric() and doc[i + 1].text in DEFAULT_TIME_WORDS)
 
             if not temperature and valid_temp_parse:
-              temperature = doc[i].text + doc[i + 1].text + doc[i + 2].text.upper()
+              if doc[i + 1].text == "°":
+                temperature = doc[i].text + doc[i + 1].text + doc[i + 2].text.upper()
+              else:
+                temperature = " ".join([doc[i].text, doc[i + 1].text, doc[i + 2].text.upper()])
 
             if not time and valid_time_parse:
                time = doc[i].text + " " + doc[i + 1].text
